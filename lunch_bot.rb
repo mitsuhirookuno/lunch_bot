@@ -6,7 +6,6 @@ require 'erb'
 
 filename = __FILE__.gsub(/\.rb$/,'.yml')
 Setting = YAML::load(ERB.new(IO.read(filename)).result)
-# Setting = YAML.load_file(filename)
 
 class LunchBot
 
