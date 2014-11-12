@@ -1,0 +1,16 @@
+ChatWork:
+  Url: https://api.chatwork.com/
+  Token: <%= ENV['CHAT_WORK_TOKEN'] %>
+  Room: <%= ENV['CHAT_WORK_ROOM'] %>
+  AssignedByAccount: <%= ENV['CHAT_WORK_ASSIGEN_BY_ACCOUNT'] %>
+  OrderTemplate:
+    - ステーキ
+    - 牛たん
+    - 豚めし
+  PairOrderTemplate:
+    - フレンチ
+    - イタリア
+    - 赤ココナッツカレー
+    - ハワイアン
+    - コリアン
+    - 日替わり
