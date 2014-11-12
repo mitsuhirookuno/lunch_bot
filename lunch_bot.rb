@@ -4,7 +4,6 @@ require 'json'
 require 'yaml'
 require 'erb'
 require 'date'
-require 'pry'
 
 filename = __FILE__.gsub(/\.rb$/,'.yml')
 Setting = YAML::load(ERB.new(IO.read(filename)).result)
