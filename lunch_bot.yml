@@ -4,13 +4,15 @@ ChatWork:
   Room: <%= ENV['CHAT_WORK_ROOM'] %>
   AssignedByAccount: <%= ENV['CHAT_WORK_ASSIGEN_BY_ACCOUNT'] %>
   OrderTemplate:
-    - ステーキ
-    - 牛たん
-    - 豚めし
+    Friday:
+      - ステーキ
+      - 牛たん
+      - 豚めし
   PairOrderTemplate:
-    - フレンチ
-    - イタリア
-    - 赤ココナッツカレー
-    - ハワイアン
-    - コリアン
-    - 日替わり
+    Thursday:
+      - フレンチ
+      - イタリア
+      - 赤ココナッツカレー
+      - ハワイアン
+      - コリアン
+      - 日替わり

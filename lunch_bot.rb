@@ -3,6 +3,8 @@ require 'faraday'
 require 'json'
 require 'yaml'
 require 'erb'
+require 'date'
+require 'pry'
 
 filename = __FILE__.gsub(/\.rb$/,'.yml')
 Setting = YAML::load(ERB.new(IO.read(filename)).result)
@@ -14,7 +16,16 @@ class LunchBot
     @user_hash    = {}
     @warning_list = []
     @ChatWorkSetting = chat_work_setting['ChatWork']
-    @ChatWorkSetting['OrderTemplate'] += @ChatWorkSetting['PairOrderTemplate'].combination(2).collect{|r| r.join(",") }
+    @order_template = []
+	@today_name = Date::DAYNAMES[Date.today.wday]
+	if @ChatWorkSetting['OrderTemplate'].key?(@today_name)
+	  @order_template += @ChatWorkSetting['OrderTemplate'][@today_name]
+	end 
+	if @ChatWorkSetting['PairOrderTemplate'].key?(@today_name)
+	  @order_template += @ChatWorkSetting['PairOrderTemplate'][@today_name]
+	  @order_template += @ChatWorkSetting['PairOrderTemplate'][@today_name].combination(2).collect{|r| r.join(",") }
+	end 
+    raise 'no reservation day' if @order_template.size.zero? 
     @faraday = Faraday.new(url: @ChatWorkSetting['Url']) do |faraday|
       faraday.response :logger
       faraday.adapter  Faraday.default_adapter
@@ -41,9 +52,8 @@ class LunchBot
   def rearrange_task_list(task_list)
     task_list.each do |task|
       @user_hash.store( task['assigned_by_account']['account_id'], task['assigned_by_account']['name'] )
-      unless @ChatWorkSetting['OrderTemplate'].include?(task['body'])
+      unless @order_template.include?(task['body'])
         @warning_list << { account_id: task['assigned_by_account']['account_id'], order: task['body'] }
-         # "[To:%s] %s さん 注文【%s】 を、私は解釈出来ません。力足らずごめんなさい。" % [ task['assigned_by_account']['account_id'], @user_hash[task['assigned_by_account']['account_id']], task['body'] ]
         next
       end
       if @order_hash.key?(task['body'])
@@ -65,7 +75,7 @@ class LunchBot
       message << @warning_list.map do |r|
         "[To:%s] %s さん 注文【%s】 を、私は解釈出来ません。力足らずごめんなさい。" % [ r[:account_id], @user_hash[r[:account_id]], r[:order] ]
       end.join("\n")
-      message << "\n[info][title]オーダー可能なメニュー(こちらをコピーしてください)[/title]%s[/info]" % @ChatWorkSetting['OrderTemplate'].join("\n")
+      message << "\n[info][title]オーダー可能なメニュー(こちらをコピーしてください)[/title]%s[/info]" % @order_template.join("\n")
     end
 
     @faraday.post do |r|
