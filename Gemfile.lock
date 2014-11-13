@@ -1,6 +1,7 @@
 GEM
   remote: https://rubygems.org/
   specs:
+    dotenv (1.0.2)
     faraday (0.9.0)
       multipart-post (>= 1.2, < 3)
     json (1.8.1)
@@ -10,5 +11,6 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
+  dotenv
   faraday
   json
