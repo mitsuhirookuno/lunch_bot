@@ -16,15 +16,16 @@ class LunchBot
     @warning_list = []
     @ChatWorkSetting = chat_work_setting['ChatWork']
     @order_template = []
-	@today_name = Date::DAYNAMES[Date.today.wday]
-	if @ChatWorkSetting['OrderTemplate'].key?(@today_name)
-	  @order_template += @ChatWorkSetting['OrderTemplate'][@today_name]
-	end 
-	if @ChatWorkSetting['PairOrderTemplate'].key?(@today_name)
-	  @order_template += @ChatWorkSetting['PairOrderTemplate'][@today_name]
-	  @order_template += @ChatWorkSetting['PairOrderTemplate'][@today_name].combination(2).collect{|r| r.join(",") }
-	end 
-    raise 'no reservation day' if @order_template.size.zero? 
+    @option_template = @ChatWorkSetting['OptionTemplate']
+    @today_name = Date::DAYNAMES[Date.today.wday]
+    if @ChatWorkSetting['OrderTemplate'].key?(@today_name)
+      @order_template += @ChatWorkSetting['OrderTemplate'][@today_name]
+    end
+    if @ChatWorkSetting['PairOrderTemplate'].key?(@today_name)
+      @order_template += @ChatWorkSetting['PairOrderTemplate'][@today_name]
+      @order_template += @ChatWorkSetting['PairOrderTemplate'][@today_name].combination(2).collect{|r| r.join(",") }
+    end
+    raise 'no reservation day' if @order_template.size.zero?
     @faraday = Faraday.new(url: @ChatWorkSetting['Url']) do |faraday|
       faraday.response :logger
       faraday.adapter  Faraday.default_adapter
@@ -33,6 +34,7 @@ class LunchBot
 
   def run
     task_list = scrape_and_generate_task_list
+    run_option_if_last_task_is_option(task_list)
     rearrange_task_list(task_list)
     report
   end
@@ -48,10 +50,25 @@ class LunchBot
     JSON.parse(response.body)
   end
 
+  def run_option_if_last_task_is_option(task_list)
+    last_task = task_list.last
+    return true unless @option_template.include?(last_task['body'])
+
+    post_list if last_task['body'] == 'list'
+  end
+
+  def post_list
+    report(@order_template.join("\n"))
+    exit
+  end
+
   def rearrange_task_list(task_list)
     task_list.each do |task|
       @user_hash.store( task['assigned_by_account']['account_id'], task['assigned_by_account']['name'] )
       unless @order_template.include?(task['body'])
+        if @option_template.include?(task['body'])
+          next
+        end
         @warning_list << { account_id: task['assigned_by_account']['account_id'], order: task['body'] }
         next
       end
@@ -63,7 +80,7 @@ class LunchBot
     end
   end
 
-  def report
+  def create_message
     message = '[info]'
     @order_hash.each do |menu,queue|
       message << "[title]%s(%d)[/title] %s" % [ menu, queue.size, queue.map{|r| "[picon:#{r}]" }.join ]
@@ -77,6 +94,12 @@ class LunchBot
       message << "\n[info][title]オーダー可能なメニュー(こちらをコピーしてください)[/title]%s[/info]" % @order_template.join("\n")
     end
 
+    message
+  end
+
+  def report(message = nil)
+    message ||= create_message
+
     @faraday.post do |r|
       r.url '/v1/rooms/%s/messages' % @ChatWorkSetting['Room']
       r.headers['X-ChatWorkToken'] = @ChatWorkSetting['Token']
@@ -85,7 +108,6 @@ class LunchBot
   end
 end
 
-
 begin
   lunch_bot = LunchBot.new(Setting)
   lunch_bot.run
@@ -93,7 +115,3 @@ rescue => ex
   puts ex.message
   puts ex.backtrace.inspect
 end
-
-
-
-
