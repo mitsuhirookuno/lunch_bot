@@ -16,3 +16,5 @@ ChatWork:
       - ハワイアン
       - コリアン
       - 日替わり
+  OptionTemplate:
+    - list
