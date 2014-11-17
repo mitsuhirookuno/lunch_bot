@@ -85,15 +85,17 @@ class LunchBot
   def create_message
     message = '[info]'
     @order_hash.each do |menu,queue|
-      message << "[title]%s(%d)[/title] %s" % [ menu, queue.size, queue.map{|r| "[picon:#{r}]" }.join ]
+      message << "[info][title]%s(%d)[/title] %s [/info]" % [ menu, queue.size, queue.map{|r| "[picon:#{r}]" }.join ]
     end
     message << '[/info]'
     unless @warning_list.size.zero?
-      message << "\n[hr]Warning[hr]\n"
+      message << '[info]'
+      message << "[hr]注意：解釈出来ません。力足らずごめんなさい。[hr]"
       message << @warning_list.map do |r|
-        "[To:%s] %s さん 注文【%s】 を、私は解釈出来ません。力足らずごめんなさい。" % [ r[:account_id], @user_hash[r[:account_id]], r[:order] ]
+        "[To:%s] %s さんの【%s】" % [ r[:account_id], @user_hash[r[:account_id]], r[:order] ]
       end.join("\n")
-      message << "\n[info][title]オーダー可能なメニュー(こちらをコピーしてください)[/title]%s[/info]" % @order_template.join("\n")
+      message << '[/info]'
+      message << "[info][title]オーダー可能なメニュー(こちらをコピーしてください)[/title]%s[/info]" % @order_template.join("\n")
     end
 
     message
@@ -105,7 +107,7 @@ class LunchBot
     @faraday.post do |r|
       r.url '/v1/rooms/%s/messages' % @ChatWorkSetting['Room']
       r.headers['X-ChatWorkToken'] = @ChatWorkSetting['Token']
-      r.params[:body] = '[info]%s[/info]' % message
+      r.params[:body] = '%s' % message
     end
   end
 end
