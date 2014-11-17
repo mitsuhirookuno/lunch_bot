@@ -4,6 +4,7 @@ require 'json'
 require 'yaml'
 require 'erb'
 require 'date'
+require 'pstore'
 require 'dotenv'
 Dotenv.load
 
@@ -49,6 +50,16 @@ class LunchBot
       r.headers['X-ChatWorkToken'] = @ChatWorkSetting['Token']
     end
     raise 'no assigned task' if response.body.size.zero?
+    if @ChatWorkSetting.has_key?('PStore')
+      db = PStore.new(@ChatWorkSetting['PStore'])
+      db.transaction do
+        if db['before_body'] == response.body
+          raise 'no change task'
+        else
+          db['before_body'] = response.body
+        end
+      end
+    end
     JSON.parse(response.body)
   end
 
@@ -85,17 +96,17 @@ class LunchBot
   def create_message
     message = '[info]'
     @order_hash.each do |menu,queue|
-      message << "[info][title]%s(%d)[/title] %s [/info]" % [ menu, queue.size, queue.map{|r| "[picon:#{r}]" }.join ]
+      message << "[info][title]%s(%d)(y)[/title] %s [/info]" % [ menu, queue.size, queue.map{|r| "[picon:#{r}]" }.join ]
     end
     message << '[/info]'
     unless @warning_list.size.zero?
       message << '[info]'
-      message << "[hr]注意：解釈出来ません。力足らずごめんなさい。[hr]"
+      message << "[hr]注意：解釈出来ません。力足らずごめんなさい。;([hr]"
       message << @warning_list.map do |r|
         "[To:%s] %s さんの【%s】" % [ r[:account_id], @user_hash[r[:account_id]], r[:order] ]
       end.join("\n")
       message << '[/info]'
-      message << "[info][title]オーダー可能なメニュー(こちらをコピーしてください)[/title]%s[/info]" % @order_template.join("\n")
+      message << "[info][title](F)オーダー可能なメニュー(こちらをコピーしてください)(F)[/title]%s[/info]" % @order_template.join("\n")
     end
 
     message

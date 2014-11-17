@@ -18,3 +18,4 @@ ChatWork:
       - 日替わり
   OptionTemplate:
     - list
+  PStore: pstore.db
